@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicStampedReference;
 public class LogEntry<T> {
     private final T key;
     private final AtomicStampedReference<T> valueWithVersion;
-    private T previousValue; // 🚀 Ensures latest values are visible to all threads
+    private T previousValue;
     private int previousVersion;
 
     public LogEntry(T key, T value, int version) {
