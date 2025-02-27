@@ -2,16 +2,18 @@ import java.util.Random;
 
 class RLUBenchmark extends Thread {
     private final RLU<Integer> list;
-    private final int keyRange;
     private final int percentRead;
     private final int percentWrite;
+    private final int bucketCount;
+    private final int nodes;
     private int numOps = 0;
 
-    public RLUBenchmark(RLU<Integer> list, int keyRange, int percentRead, int percentWrite) {
+    public RLUBenchmark(RLU<Integer> list, int percentRead, int percentWrite, int bucketCount, int nodes) {
         this.list = list;
-        this.keyRange = keyRange;
         this.percentRead = percentRead;
         this.percentWrite = percentWrite;
+        this.bucketCount = bucketCount;
+        this.nodes = nodes;
     }
 
     @Override
@@ -21,7 +23,10 @@ class RLUBenchmark extends Thread {
 
         while (!Thread.currentThread().isInterrupted()) {
             int op = rand.nextInt(100);
-            int key = rand.nextInt(this.keyRange);
+            // Spread nodes evenly in buckets
+            int bucketIndex = rand.nextInt(bucketCount);
+            int keyWithinBucket = rand.nextInt(nodes);
+            int key = bucketIndex * nodes + keyWithinBucket;
 
             if (op < perRead) {
                 list.read(key);
@@ -42,18 +47,18 @@ class RLUBenchmark extends Thread {
      *
      * @param list the RLU instance to test
      * @param numThreads number of concurrent threads
-     * @param keyRange range of keys to test [0, keyRange)
      * @param perRead percentage of read(x) operations
      * @param perWrite percentage of write(x) operations
+     * @param bucketCount count of hash table buckets
+     * @param nodes count of nodes for each bucket
      * @param ms test duration in milliseconds
      */
-    public static void runTest(RLU<Integer> list, int numThreads, int keyRange, int perRead, int perWrite, int ms) {
-        // Create threads
-        final int perRemove = 100 - perWrite - perRead; // Calculate remove percentage
+    public static void runTest(RLU<Integer> list, int numThreads, int perRead, int perWrite, int bucketCount, int nodes, int ms) {
+        final int perRemove = 100 - perWrite - perRead;
         RLUBenchmark[] threads = new RLUBenchmark[numThreads];
 
         for (int i = 0; i < numThreads; ++i)
-            threads[i] = new RLUBenchmark(list, keyRange, perRead, perWrite);
+            threads[i] = new RLUBenchmark(list, perRead, perWrite, bucketCount, nodes);
 
         // Start threads
         for (int i = 0; i < numThreads; ++i) {
@@ -82,7 +87,6 @@ class RLUBenchmark extends Thread {
             totalOps += t.numOps;
         }
         double throughput = totalOps / (1000.0 * ms);
-        System.out.println(numThreads + "\t[" + keyRange +
-                "](" + perRemove + "% remove, " + perWrite + "% write, " + perRead + "% read): " + (long)throughput + " Operations/µ s");
+        System.out.println("["+numThreads+"]" + " (" + perRemove + "% remove, " + perWrite + "% write, " + perRead + "% read): " + (long)throughput + " Operations/µ s");
     }
 }

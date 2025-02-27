@@ -3,8 +3,14 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class MainLog<T> {
-    private final ConcurrentHashMap<T, LogEntry<T>> mainLogEntries = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<T, LogEntry<T>> mainLogEntries;
     private final ThreadLocal<Map<T, LogEntry<T>>> threadCommitLog = ThreadLocal.withInitial(HashMap::new);
+    public MainLog() {
+        mainLogEntries = new ConcurrentHashMap<>();
+    }
+    public MainLog(int bucketSize) {
+        mainLogEntries = new ConcurrentHashMap<>(bucketSize);
+    }
 
     public boolean commit(ConcurrentHashMap<T, LogEntry<T>> localLog,boolean batchCommit) {
         Map<T, LogEntry<T>> commitLog = threadCommitLog.get();

@@ -8,19 +8,33 @@ public class RLU<T> {
     private final ThreadLocal<Long> transactionId;
     private final boolean batchCommit;
 
-    public RLU() {
-        this.mainLog = new MainLog<>();
+    private RLU(MainLog<T> mainLog, boolean batchCommit) {
+        this.mainLog = mainLog;
         this.localLogs = new ConcurrentHashMap<>();
-        this.transactionId =
-                ThreadLocal.withInitial(() -> transactionCounter.incrementAndGet());
-        this.batchCommit = true;
-    }
-    public RLU(boolean batchCommit) {
-        this.mainLog = new MainLog<>();
+        this.transactionId = ThreadLocal.withInitial(() -> transactionCounter.incrementAndGet());
         this.batchCommit = batchCommit;
-        this.localLogs = new ConcurrentHashMap<>();
-        this.transactionId =
-                ThreadLocal.withInitial(() -> transactionCounter.incrementAndGet());
+    }
+
+    // Public constructors chaining to the private constructor
+
+    // Default: no bucketSize, batchCommit true
+    public RLU() {
+        this(new MainLog<>(), true);
+    }
+
+    // Constructor with bucketSize, default batchCommit true
+    public RLU(int bucketSize) {
+        this(new MainLog<>(bucketSize), true);
+    }
+
+    // Constructor with batchCommit, default mainLog
+    public RLU(boolean batchCommit) {
+        this(new MainLog<>(), batchCommit);
+    }
+
+    // Constructor with bucketSize and batchCommit
+    public RLU(int bucketSize, boolean batchCommit) {
+        this(new MainLog<>(bucketSize), batchCommit);
     }
 
     private LocalLog<T> getLocalLog() {
